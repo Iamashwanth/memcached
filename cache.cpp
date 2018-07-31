@@ -8,38 +8,12 @@
 // - timestamps
 // - debug logging
 
-vector<uint32_t> cache::cache_sizes = {};
-
-unsigned int next_pow_of_2(unsigned int x) {
-	unsigned int i=1;
-
-	while (i < x) {
-		i <<= 1;
-	}
-
-	return i;
-}
-
-void cache::init_cache_sizes() {
-	uint32_t size = BASE_CHUNK_SIZE;
-
-	while (size < PAGE_SIZE_B) {
-		cache_sizes.push_back(size);
-		size =  next_pow_of_2(size * CLASS_SCALE);
-	}
-}
-
-uint32_t cache::chunk_size(uint8_t classid) {
-	return cache_sizes[classid-1];
-}
-
-cache::cache(uint8_t class_id) : class_id{class_id} {
-	item_size = chunk_size(class_id);
-
+cache::cache(uint8_t cid, uint32_t size) : class_id{cid}, item_size{size} {
 	cout << "cache class " << unsigned(class_id) << ": " <<
 		"item size: " << unsigned(item_size) << ": ";
 
 	cache_grow();
+	/* handle failures by setting init memeber*/
 
 	cout << "item count: " << unsigned(count) << endl;
 }
@@ -64,13 +38,13 @@ bool cache::cache_grow() {
 	pg->ref_cnt = 0;
 	page_list.push_back(pg);
 
-	while (off+chunk_size(class_id) < PAGE_SIZE_B) {
+	while (off+item_size < PAGE_SIZE_B) {
 		buf = (item_t*) new item_t;
 		buf->data = (uint8_t*)mem + off;
 		free_list.push_back(buf);
 
 		count++;
-		off += chunk_size(class_id);
+		off += item_size;
 	}
 
 	return true;

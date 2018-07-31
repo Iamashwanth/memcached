@@ -1,7 +1,6 @@
 #ifndef SLAB_H
 #define SLAB_H
 
-#include <cmath>
 #include <cstdint>
 
 #include <list>
@@ -24,9 +23,6 @@ using namespace std;
  * per cache locking
  */
 
-#define BASE_CHUNK_SIZE 128
-#define CLASS_SCALE 1.25
-
 struct item_t {
 	uint8_t nkey; // key len in bytes
 	uint32_t nbytes; // entire data len in bytes
@@ -39,18 +35,13 @@ struct item_t {
 
 class cache {
 public:
-	static vector<uint32_t> cache_sizes;
-
-	cache(uint8_t class_id);
+	cache(uint8_t cid, uint32_t size);
 
 	item_t* cache_alloc(uint8_t*, uint8_t, uint8_t*, uint32_t);
 
 	uint32_t cache_get(uint8_t *key, uint8_t nkey, uint8_t *value);
 	bool cache_set(uint8_t *key, uint8_t nkey,
 		       uint8_t *value, uint32_t nbytes);
-
-	static void init_cache_sizes();
-	static uint32_t chunk_size(uint8_t classid);
 /*
 	cache_free();
 	cache_destory();
@@ -68,13 +59,8 @@ private:
 	unordered_map<string, list<item_t*>::iterator> item_map;
 
 	cache();
-
 	item_t* cache_alloc();
 	bool cache_grow();
 };
-
-
-uint32_t chunk_size(uint8_t classid);
-
 
 #endif
