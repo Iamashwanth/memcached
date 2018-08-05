@@ -29,4 +29,5 @@ void* alloc_page() {
 
 /* setup sig handler */
 void page_allocator_exit() {
+	delete mem_pool;
 }

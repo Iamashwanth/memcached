@@ -3,6 +3,8 @@
 
 #include "cache.h"
 
+unordered_map<string, list<item_t*>::iterator> cache::item_map;
+
 // Current TODO's
 // - locking
 // - timestamps
@@ -16,6 +18,27 @@ cache::cache(uint8_t cid, uint32_t size) : class_id{cid}, item_size{size} {
 	/* handle failures by setting init memeber*/
 
 	cout << "item count: " << unsigned(count) << endl;
+}
+
+cache::~cache() {
+	while(!page_list.empty())
+		delete page_list.back();
+}
+
+uint32_t cache::get_kv_len(uint8_t* key, uint8_t nkey) {
+	item_t *buf;
+	list<item_t*>::iterator item_it;
+
+	string key_str(key, key+nkey);
+	auto map_it = item_map.find(key_str);
+
+	if (map_it != item_map.end()) {
+		item_it = (*map_it).second;
+		buf = *item_it;
+		return buf->nkey + buf->nbytes;
+	}
+
+	return 0;
 }
 
 /* Grow the cache by acquring a page from mempool
@@ -39,8 +62,7 @@ bool cache::cache_grow() {
 	page_list.push_back(pg);
 
 	while (off+item_size < PAGE_SIZE_B) {
-		buf = (item_t*) new item_t;
-		buf->data = (uint8_t*)mem + off;
+		buf = (item_t*) ((uint8_t*)mem + off);
 		free_list.push_back(buf);
 
 		count++;
@@ -76,14 +98,14 @@ item_t* cache::cache_alloc() {
  * 0 in case the key does not exist
  */
 
-uint32_t cache::cache_get(uint8_t *key, uint8_t nkey, uint8_t *value) {
+int cache::cache_get(uint8_t *key, uint8_t nkey, uint8_t *value) {
 	item_t *buf;
 	list<item_t*>::iterator item_it;
 
 	string key_str(key, key+nkey);
 	auto map_it = item_map.find(key_str);
 
-	if (map_it == item_map.end()) return 0;
+	if (map_it == item_map.end()) return -1;
 
 	item_it = (*map_it).second;
 	buf = *item_it;
@@ -93,7 +115,7 @@ uint32_t cache::cache_get(uint8_t *key, uint8_t nkey, uint8_t *value) {
 
 	memcpy(value, buf->data + buf->nkey, buf->nbytes);
 
-	return buf->nbytes;
+	return (int)buf->nbytes;
 }
 
 bool cache::cache_set(uint8_t *key, uint8_t nkey,
@@ -103,9 +125,6 @@ bool cache::cache_set(uint8_t *key, uint8_t nkey,
 
 	string key_str(key, key+nkey);
 	auto map_it = item_map.find(key_str);
-
-	if (nkey + nbytes > item_size)
-	    return false;
 
 	if (map_it != item_map.end()) {
 		item_it = (*map_it).second;

@@ -11,7 +11,10 @@
 class cache_helper {
 public:
 	cache_helper();
-	uint8_t get_class_id(uint32_t size);
+	~cache_helper();
+	int cache_get(uint8_t *key, uint8_t nkey, uint8_t *value);
+	bool cache_set(uint8_t *key, uint8_t nkey,
+		       uint8_t *value, uint32_t nbytes);
 
 private:
 	vector<cache*> caches;
@@ -22,7 +25,9 @@ private:
 	void init_cache_sizes();
 	bool is_valid_class_id(uint8_t id);
 	uint32_t get_chunk_size(uint8_t classid);
+	uint32_t get_true_size(uint32_t sz);
 	cache* get_cache(uint8_t class_id);
+	uint8_t get_class_id(uint32_t size);
 };
 
 #endif

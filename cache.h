@@ -29,17 +29,19 @@ struct item_t {
 	// placeholders
 	// Timestamp - gc for items
 	// page ptr - refcnt and gc for pages
-	uint8_t *data; // stores null-terminated key + value followed by\r\n
+	uint8_t data[]; // stores null-terminated key + value followed by\r\n
 };
 
 
 class cache {
 public:
 	cache(uint8_t cid, uint32_t size);
+	~cache();
 
+	static uint32_t get_kv_len(uint8_t* key, uint8_t nkey);
 	item_t* cache_alloc(uint8_t*, uint8_t, uint8_t*, uint32_t);
 
-	uint32_t cache_get(uint8_t *key, uint8_t nkey, uint8_t *value);
+	int cache_get(uint8_t *key, uint8_t nkey, uint8_t *value);
 	bool cache_set(uint8_t *key, uint8_t nkey,
 		       uint8_t *value, uint32_t nbytes);
 /*
@@ -56,7 +58,7 @@ private:
 	list<item_t*> free_list;
 	list<page_t*> page_list;
 	/* set up a custom hash func for unit8_t* */
-	unordered_map<string, list<item_t*>::iterator> item_map;
+	static unordered_map<string, list<item_t*>::iterator> item_map;
 
 	cache();
 	item_t* cache_alloc();
